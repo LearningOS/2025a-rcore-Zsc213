@@ -54,6 +54,7 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            trap_times: [0 as u8; task::MAX_TRAP_NUM],
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -135,6 +136,18 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    fn get_trap_times(&self, trap_id: usize) -> u8 {
+        let inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].trap_times[trap_id]
+    }
+
+    fn add_trap_times(&self, trap_id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].trap_times[trap_id] += 1;
+    }
 }
 
 /// Run the first task in task list.
@@ -168,4 +181,14 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// get task trap times
+pub fn get_trap_times(trap_id: usize) -> u8 {
+    TASK_MANAGER.get_trap_times(trap_id)
+}
+
+/// record trap times
+pub fn add_trap_times(trap_id: usize) {
+    TASK_MANAGER.add_trap_times(trap_id);
 }
