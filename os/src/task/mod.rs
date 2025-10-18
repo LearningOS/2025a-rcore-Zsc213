@@ -15,6 +15,7 @@ mod switch;
 mod task;
 
 use crate::loader::{get_app_data, get_num_app};
+use crate::mm::{VirtAddr, MapPermission};
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
@@ -153,6 +154,24 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    fn get_trap_times(&self, trap_id: usize) -> u8 {
+        let inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].trap_times[trap_id]
+    }
+
+    fn add_trap_times(&self, trap_id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].trap_times[trap_id] += 1;
+    }
+
+    fn add_map(&self, start_va: VirtAddr, end_va: VirtAddr, map_perm: MapPermission,) {
+        let mut inner = self.inner.exclusive_access();
+        let current_task = inner.current_task;
+        inner.tasks[current_task].memory_set.add_area(start_va, end_va, map_perm);
+    }
 }
 
 /// Run the first task in task list.
@@ -201,4 +220,19 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+/// get task trap times
+pub fn get_trap_times(trap_id: usize) -> u8 {
+    TASK_MANAGER.get_trap_times(trap_id)
+}
+
+/// record trap times
+pub fn add_trap_times(trap_id: usize) {
+    TASK_MANAGER.add_trap_times(trap_id);
+}
+
+/// user process add buffer map
+pub fn add_map(start_va: VirtAddr, end_va: VirtAddr, map_perm: MapPermission) {
+    TASK_MANAGER.add_map(start_va, end_va, map_perm);
 }

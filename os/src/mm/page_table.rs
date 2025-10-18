@@ -179,3 +179,17 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
     }
     v
 }
+
+/// read/write in user mode
+pub fn accessible(token: usize, ptr: *const u8, mode: usize) -> bool {
+    let page_table = PageTable::from_token(token);
+    if let Some(pte) = page_table.find_pte(VirtPageNum::from(ptr as usize)) {
+        match mode {
+            0 => pte.is_valid() && pte.readable(),
+            1 => pte.is_valid() && pte.writable(),
+            _ => false
+        }
+    } else {
+        false
+    }
+}

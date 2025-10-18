@@ -221,6 +221,25 @@ impl MemorySet {
             elf.header.pt2.entry_point() as usize,
         )
     }
+
+    /// user process add alloc page
+    pub fn add_area(&mut self, start_va: VirtAddr, end_va: VirtAddr, permission: MapPermission) {
+        let mut new_area = MapArea::new(start_va, end_va, MapType::Framed, permission);
+        let page_number = (end_va.0 - start_va.0) % PAGE_SIZE;
+        for i in 0..page_number {
+            new_area.map_one(&mut self.page_table, VirtPageNum::from(start_va.0 + i*PAGE_SIZE));
+
+        }
+        self.push(
+            MapArea::new(start_va, end_va, MapType::Framed, permission), None
+        );
+    }
+
+    /// user process unalloc page
+    pub fn delete_area(&mut self) {
+        todo!()
+    }
+
     /// Change page table by writing satp CSR Register.
     pub fn activate(&self) {
         let satp = self.page_table.token();

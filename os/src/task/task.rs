@@ -6,6 +6,8 @@ use crate::mm::{
 };
 use crate::trap::{trap_handler, TrapContext};
 
+pub const MAX_TRAP_NUM: usize = 512;
+
 /// The task control block (TCB) of a task.
 pub struct TaskControlBlock {
     /// Save task context
@@ -28,6 +30,9 @@ pub struct TaskControlBlock {
 
     /// Program break
     pub program_brk: usize,
+
+    /// record trap times
+    pub trap_times: [u8; MAX_TRAP_NUM]
 }
 
 impl TaskControlBlock {
@@ -63,6 +68,7 @@ impl TaskControlBlock {
             base_size: user_sp,
             heap_bottom: user_sp,
             program_brk: user_sp,
+            trap_times: [0 as u8; MAX_TRAP_NUM],
         };
         // prepare TrapContext in user space
         let trap_cx = task_control_block.get_trap_cx();
